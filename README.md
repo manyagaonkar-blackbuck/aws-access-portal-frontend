@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AWS Access Portal – Frontend
 
-## Getting Started
+This repository contains the frontend application for an AWS Access Request Platform.
+The platform allows users to request temporary AWS permissions and track approval status.
 
-First, run the development server:
+The frontend is designed to work with a Spring Boot backend integrated with an LLM for request validation and IAM policy generation.
+
+---
+
+## Project Overview
+
+The system enables users to:
+- Submit AWS access requests using natural language
+- Select AWS services and actions
+- Track request lifecycle through approval stages
+- View request details from a dashboard
+
+The frontend is built in phases to ensure stability and clear separation from backend logic.
+
+---
+
+## Tech Stack
+
+- Next.js (App Router)
+- TypeScript
+- React
+- CSS (no Tailwind)
+- shadcn/ui components
+- Node.js
+
+---
+
+## Implemented Features
+
+### Access Request Form
+- AWS service selection (S3, EC2, IAM, DynamoDB)
+- Conditional action selection for S3
+- Fixed access duration (24 hours)
+- Natural language input for use case description
+
+### Dashboard
+- Tabular view of access requests
+- Status indicators:
+  - CREATED
+  - DEVOPS_APPROVED
+  - MANAGER_APPROVED
+  - MANAGER_REJECTED
+- Loading and empty state handling
+- Navigation to individual request details
+
+### Request Details Page
+- Dedicated page for each access request
+- Displays service, action, reason, duration, status, and timestamps
+- URL-based routing using request ID
+
+Note: Dashboard data is currently mocked. Backend GET API integration is planned in the next phase.
+
+---
+
+## Backend Integration Status
+
+| Feature                     | Status        |
+|----------------------------|---------------|
+| Create Access Request (POST) | Integrated    |
+| Database Persistence        | Working       |
+| LLM Processing              | Backend       |
+| Fetch Requests (GET)        | Planned       |
+| Approval Actions            | Planned       |
+
+---
+
+## Running the Project Locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
