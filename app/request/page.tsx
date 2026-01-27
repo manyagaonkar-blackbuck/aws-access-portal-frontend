@@ -2,24 +2,41 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createAccessRequest } from "@/lib/api";
 
 export default function CreateRequestPage() {
   const router = useRouter();
 
   const [useCase, setUseCase] = useState("");
   const [service, setService] = useState("");
-  const [duration] = useState("1"); // fixed to 1 day
+  const [s3Action, setS3Action] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  const durationHours = 24;
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setLoading(true);
 
-    console.log({
-      useCase,
-      service,
-      duration: "1 day",
-    });
+    try {
+      const finalUseCase =
+        service === "S3"
+          ? `${useCase} | S3 Action: ${s3Action}`
+          : useCase;
 
-    router.push("/dashboard");
+      await createAccessRequest({
+        useCase: finalUseCase,
+        service,
+        durationHours,
+      });
+
+      router.push("/dashboard");
+    } catch (error) {
+      alert("Failed to submit access request");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -39,9 +56,9 @@ export default function CreateRequestPage() {
           />
         </div>
 
-        {/* SERVICE */}
+        {/* AWS SERVICE */}
         <div style={{ marginBottom: "20px" }}>
-          <label>Select AWS service</label>
+          <label>AWS Service</label>
           <br />
           <select
             value={service}
@@ -49,15 +66,36 @@ export default function CreateRequestPage() {
             required
             style={{ width: "100%", padding: "10px" }}
           >
-            <option value="">Select</option>
+            <option value="">Select service</option>
             <option value="S3">S3</option>
             <option value="EC2">EC2</option>
-            <option value="DynamoDB">DynamoDB</option>
             <option value="IAM">IAM</option>
+            <option value="DynamoDB">DynamoDB</option>
           </select>
         </div>
 
-        {/* DURATION (FIXED) */}
+        {/* S3 ACTIONS — ONLY WHEN S3 */}
+        {service === "S3" && (
+          <div style={{ marginBottom: "20px" }}>
+            <label>S3 Action</label>
+            <br />
+            <select
+              value={s3Action}
+              onChange={(e) => setS3Action(e.target.value)}
+              required
+              style={{ width: "100%", padding: "10px" }}
+            >
+              <option value="">Select action</option>
+              <option value="CreateBucket">Create Bucket</option>
+              <option value="UploadObject">Upload Object</option>
+              <option value="ReadObject">Read Object</option>
+              <option value="DeleteObject">Delete Object</option>
+              <option value="ListBuckets">List Buckets</option>
+            </select>
+          </div>
+        )}
+
+        {/* DURATION */}
         <div style={{ marginBottom: "20px" }}>
           <label>Access duration</label>
           <br />
@@ -65,11 +103,17 @@ export default function CreateRequestPage() {
             type="text"
             value="1 day (24 hours)"
             disabled
-            style={{ width: "100%", padding: "10px", background: "#f3f4f6" }}
+            style={{
+              width: "100%",
+              padding: "10px",
+              background: "#f3f4f6",
+            }}
           />
         </div>
 
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Submitting..." : "Submit"}
+        </button>
       </form>
     </div>
   );
