@@ -2,6 +2,52 @@
 
 import { useEffect, useState } from "react";
 import { fetchAccessRequests } from "@/lib/utils";
+import CreateAccessRequestForm from "@/components/CreateAccessRequestForm";
+
+/**
+ * Service → Actions mapping (frontend-only)
+ */
+const SERVICE_ACTIONS: Record<string, string[]> = {
+  S3: ["ListBucket", "GetObject", "PutObject"],
+  EC2: ["DescribeInstances", "StartInstances", "StopInstances"],
+};
+
+/**
+ * Derive services from actions returned by backend
+ */
+function deriveServices(resourceArns: string[] = []) {
+  const services = new Set<string>();
+
+  Object.entries(SERVICE_ACTIONS).forEach(([service, actions]) => {
+    actions.forEach((action) => {
+      if (resourceArns.includes(action)) {
+        services.add(service);
+      }
+    });
+  });
+
+  return Array.from(services);
+}
+
+/**
+ * 🔥 NORMALIZE SERVICES (handles string | array | null)
+ */
+function normalizeServices(services: any): string[] {
+  if (!services) return [];
+
+  if (Array.isArray(services)) {
+    return services;
+  }
+
+  if (typeof services === "string") {
+    return services
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
 
 export default function DashboardPage() {
   const [open, setOpen] = useState(false);
@@ -55,18 +101,31 @@ export default function DashboardPage() {
               )}
 
               {!loading &&
-                requests.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.requesterEmail}</td>
-                    <td>{(r.services || []).join(", ")}</td>
-                    <td>{r.status}</td>
-                    <td>
-                      {r.createdAt
-                        ? new Date(r.createdAt).toLocaleDateString()
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
+                requests.map((r) => {
+                  const normalizedServices = normalizeServices(r.services);
+                  const derivedServices = deriveServices(r.resourceArns || []);
+
+                  const servicesToShow =
+                    normalizedServices.length > 0
+                      ? normalizedServices
+                      : derivedServices;
+
+                  return (
+                    <tr key={r.id}>
+                      <td>{r.requesterEmail || "-"}</td>
+
+                      {/* ✅ FIXED SERVICES COLUMN */}
+                      <td>{servicesToShow.join(", ") || "-"}</td>
+
+                      <td>{r.status}</td>
+                      <td>
+                        {r.createdAt
+                          ? new Date(r.createdAt).toLocaleDateString()
+                          : "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </main>
@@ -75,16 +134,38 @@ export default function DashboardPage() {
       {/* MODAL */}
       {open && (
         <div className="modal-overlay">
-          <div className="modal-container">
+          <div
+            className="modal-container"
+            style={{
+              width: "760px",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
             <div className="modal-header">
               <h3>Create Access Request</h3>
               <button onClick={() => setOpen(false)}>✕</button>
             </div>
 
-            <iframe
-              src="/request"
-              className="modal-iframe"
-            />
+            <div
+              className="modal-body"
+              style={{
+                padding: 24,
+                overflowY: "auto",
+                flex: 1,
+              }}
+            >
+              <CreateAccessRequestForm
+                onSuccess={() => {
+                  setOpen(false);
+                  setLoading(true);
+                  fetchAccessRequests()
+                    .then(setRequests)
+                    .finally(() => setLoading(false));
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
