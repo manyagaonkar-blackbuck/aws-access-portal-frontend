@@ -1,3 +1,5 @@
+"use client";
+
 import CreateAccessRequestForm from "@/components/CreateAccessRequestForm";
 import { useRouter } from "next/navigation";
 
