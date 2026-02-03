@@ -157,14 +157,19 @@ export default function DashboardPage() {
               }}
             >
               <CreateAccessRequestForm
-                onSuccess={() => {
-                  setOpen(false);
-                  setLoading(true);
-                  fetchAccessRequests()
-                    .then(setRequests)
-                    .finally(() => setLoading(false));
-                }}
-              />
+  onSuccess={(created) => {
+    setOpen(false);
+
+    setRequests((prev) => [
+      {
+        ...created,
+        services: normalizeServices(created.services),
+      },
+      ...prev,
+    ]);
+  }}
+/>
+
             </div>
           </div>
         </div>

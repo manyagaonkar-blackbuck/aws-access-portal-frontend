@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { createAccessRequest } from "@/lib/utils";
 
+/**
+ * Service → Actions mapping
+ */
 const SERVICE_ACTIONS: Record<string, string[]> = {
   S3: ["ListBucket", "GetObject", "PutObject"],
   EC2: ["DescribeInstances", "StartInstances", "StopInstances"],
@@ -11,7 +14,7 @@ const SERVICE_ACTIONS: Record<string, string[]> = {
 export default function CreateAccessRequestForm({
   onSuccess,
 }: {
-  onSuccess?: (data?: { services: string[] }) => void;
+  onSuccess?: (created: any) => void;
 }) {
   const [useCase, setUseCase] = useState("");
   const [services, setServices] = useState<string[]>([]);
@@ -25,9 +28,11 @@ export default function CreateAccessRequestForm({
         : [...prev, service]
     );
 
-    // remove actions if service unselected
+    // remove actions of unselected service
     setActions((prev) =>
-      prev.filter((a) => !SERVICE_ACTIONS[service]?.includes(a))
+      prev.filter(
+        (a) => !SERVICE_ACTIONS[service]?.includes(a)
+      )
     );
   }
 
@@ -44,18 +49,17 @@ export default function CreateAccessRequestForm({
     setLoading(true);
 
     try {
-      await createAccessRequest({
-        requesterEmail: "user@company.com",
+      const created = await createAccessRequest({
+        requesterEmail: "user@company.com", // hidden
         awsAccount: "ZINKA",
         reason: useCase,
-        services,
+        services: services,
         resourceArns: actions,
         durationHours: 24,
       });
 
-      // 🔥 send services back to dashboard
-      onSuccess?.({ services });
-
+      // 🔥 pass POST response to dashboard
+      onSuccess?.(created);
     } catch (err) {
       alert("Failed to submit request");
       console.error(err);
@@ -66,8 +70,10 @@ export default function CreateAccessRequestForm({
 
   return (
     <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+      {/* USE CASE */}
       <div style={{ marginBottom: 20 }}>
         <label>Describe your use case</label>
+        <br />
         <textarea
           value={useCase}
           onChange={(e) => setUseCase(e.target.value)}
@@ -76,9 +82,9 @@ export default function CreateAccessRequestForm({
         />
       </div>
 
+      {/* SERVICES */}
       <div style={{ marginBottom: 20 }}>
         <label>AWS Services</label>
-
         {Object.keys(SERVICE_ACTIONS).map((service) => (
           <div key={service}>
             <label>
@@ -86,13 +92,14 @@ export default function CreateAccessRequestForm({
                 type="checkbox"
                 checked={services.includes(service)}
                 onChange={() => toggleService(service)}
-              />
+              />{" "}
               {service}
             </label>
           </div>
         ))}
       </div>
 
+      {/* ACTIONS */}
       {services.map((service) => (
         <div
           key={service}
@@ -103,15 +110,14 @@ export default function CreateAccessRequestForm({
           }}
         >
           <strong>{service} Actions</strong>
-
           {SERVICE_ACTIONS[service].map((action) => (
             <div key={action}>
               <label>
                 <input
                   type="checkbox"
-                  checkedphchecked={actions.includes(action)}
+                  checked={actions.includes(action)}
                   onChange={() => toggleAction(action)}
-                />
+                />{" "}
                 {action}
               </label>
             </div>
@@ -119,6 +125,17 @@ export default function CreateAccessRequestForm({
         </div>
       ))}
 
+      {/* DURATION */}
+      <div style={{ marginBottom: 20 }}>
+        <label>Access Duration</label>
+        <input
+          value="24 hours"
+          disabled
+          style={{ width: "100%", background: "#f3f4f6" }}
+        />
+      </div>
+
+      {/* SUBMIT */}
       <button
         type="submit"
         disabled={
